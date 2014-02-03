@@ -148,7 +148,7 @@ function build() {
     saved_modules_dir="${OPENSHIFT_NODEJS_DIR}/tmp/saved.node_modules"
 
     # Ensure that we have the node_modules directory.
-    mkdir -p $node_modules_dir
+    [ ! -d "${node_modules_dir}" ] && mkdir -p $node_modules_dir
 
     if force_clean_build_enabled_for_latest_deployment; then
         echo "Force-clean builds are enabled. Recreating npm modules" 1>&2
@@ -229,8 +229,12 @@ function pre-repo-archive() {
     node_modules_dir="${OPENSHIFT_REPO_DIR}node_modules"
     if [ -d "$node_modules_dir" ]; then
       echo 'Saving away previously installed Node modules'
-      mv "$node_modules_dir" "${OPENSHIFT_NODEJS_DIR}/tmp/saved.node_modules"
-      mkdir -p "$node_modules_dir"
+      cp -r "${node_modules_dir}" "${OPENSHIFT_NODEJS_DIR}/tmp/saved.node_modules"
+      # If hot_deploy is enabled, keep the modules available for the server.
+      #
+      if ! hot_deploy_enabled_for_latest_deployment; then
+        rm -rf "${node_modules_dir}" && mkdir -p "$node_modules_dir"
+      fi
     fi
 }
 
